@@ -1,17 +1,45 @@
 import React, { useState } from "react";
 import LoginImage from "../assets/login_image.svg";
+import { LaptopMinimalCheck } from 'lucide-react';
+import axios from 'axios'
+import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Login = ({setIsLoggedIn}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("")
 
-  function submitHandler(e) {
+  const navigate = useNavigate()
+
+  async function submitHandler(e) {
     e.preventDefault();
 
-    console.log({ email, password });
 
-    setEmail("");
-    setPassword("");
+
+    try {
+      const result = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password
+      })
+      console.log(result.data.user.id);
+      localStorage.setItem("user_id",result.data.user.id)
+      localStorage.setItem("token",result.data.token)
+      setEmail("");
+      setPassword("");
+      setIsLoggedIn(true);
+
+
+      navigate("/dashboard")
+
+    } catch (error) {
+      console.error(error.response?.data || error.message);
+      setErrorMsg(error.response?.data?.message)
+    }
+
+
+
+
+
   }
 
   return (
@@ -24,6 +52,14 @@ const Login = () => {
 
           {/* Gradient Glow */}
           <div className="absolute -top-10 -left-20 w-80 h-80 rounded-full bg-blue-600/30 blur-3xl"></div>
+
+          {/* site name and logo */}
+          <div className="absolute top-10 left-10 flex gap-1">
+            <h2 className="text-violet-400 text-lg font-semibold tracking-wide [text-shadow:0_0_8px_rgba(139,92,246,0.8),0_0_20px_rgba(139,92,246,0.5)]">
+              AssignHub
+            </h2>
+            <LaptopMinimalCheck color="#8B5CF6" strokeWidth={2.5} />
+          </div>
 
           <div className="absolute bottom-0 -right-20 w-80 h-80 rounded-full bg-violet-600/30 blur-3xl"></div>
 
@@ -72,7 +108,10 @@ const Login = () => {
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setErrorMsg("")
+                }}
                 className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               />
             </div>
@@ -87,19 +126,15 @@ const Login = () => {
                 type="password"
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setErrorMsg("")
+                }}
                 className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               />
             </div>
 
-            <div className="flex justify-end mt-3">
-              <button
-                type="button"
-                className="text-sm text-blue-600 hover:text-blue-700 transition"
-              >
-                Forgot Password?
-              </button>
-            </div>
+            <h2 className="text-sm text-red-400 flex justify-center mt-2">{errorMsg}</h2>
 
             <button
               type="submit"
