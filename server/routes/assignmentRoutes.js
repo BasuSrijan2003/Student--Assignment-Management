@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/auth");
 const requireRole = require("../middleware/role");
+const upload = require("../middleware/upload"); // <-- ADDED: Import the multer middleware
 const {
   createAssignment,
   getAssignments,
@@ -150,7 +151,7 @@ router.delete("/:id", protect, requireRole("admin"), deleteAssignment);
  * @swagger
  * /api/assignments/{id}/submit:
  *   post:
- *     summary: Student submits an assignment
+ *     summary: Student submits an assignment via file upload
  *     tags: [Assignments]
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -162,23 +163,25 @@ router.delete("/:id", protect, requireRole("admin"), deleteAssignment);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [content]
+ *             required: [file]
  *             properties:
- *               content:
+ *               file:
  *                 type: string
- *                 example: "https://drive.google.com/my-submitted-work"
+ *                 format: binary
+ *                 description: Select a file to upload (PDF, PPT, Word, etc.)
  *     responses:
  *       201:
  *         description: Submission recorded
  *       400:
- *         description: Already submitted or missing content
+ *         description: Already submitted or missing file
  *       403:
  *         description: Assignment not assigned to this student's class/section
  */
-router.post("/:id/submit", protect, requireRole("student"), submitAssignment);
+// <-- ADDED: upload.single("file") injected into the route
+router.post("/:id/submit", protect, requireRole("student"), upload.single("file"), submitAssignment);
 
 /**
  * @swagger

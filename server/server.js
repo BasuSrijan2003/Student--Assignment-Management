@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path"); // <-- ADDED
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 const connectDB = require("./config/db");
@@ -15,6 +16,9 @@ const app = express();
 // Core middleware
 app.use(cors());
 app.use(express.json());
+
+// Make the uploads folder publicly accessible via URL
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- ADDED
 
 // Swagger UI — visit /api-docs once the server is running
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

@@ -2,15 +2,15 @@ const Submission = require("../models/Submission");
 const Assignment = require("../models/Assignment");
 const User = require("../models/User");
 
-// @desc  Student submits an assignment
+// @desc  Student submits an assignment via File Upload
 // @route POST /api/assignments/:id/submit  (student only)
 exports.submitAssignment = async (req, res) => {
   try {
-    const { content } = req.body;
     const assignmentId = req.params.id;
 
-    if (!content) {
-      return res.status(400).json({ success: false, message: "content is required" });
+    // 1. Check if multer attached the file
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Please upload a file (PDF, PPT, DOCX, etc.)" });
     }
 
     const assignment = await Assignment.findById(assignmentId);
@@ -18,7 +18,7 @@ exports.submitAssignment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Assignment not found" });
     }
 
-    // Make sure this assignment actually belongs to the student's class/section
+    // 2. Make sure this assignment actually belongs to the student's class/section
     const student = await User.findById(req.user.id);
     if (assignment.class !== student.class || assignment.section !== student.section) {
       return res.status(403).json({
@@ -27,6 +27,7 @@ exports.submitAssignment = async (req, res) => {
       });
     }
 
+    // 3. Ensure they haven't submitted already
     const alreadySubmitted = await Submission.findOne({
       assignment: assignmentId,
       student: req.user.id,
@@ -35,10 +36,12 @@ exports.submitAssignment = async (req, res) => {
       return res.status(400).json({ success: false, message: "You have already submitted this assignment" });
     }
 
+    // 4. Save the file metadata to the database
     const submission = await Submission.create({
       assignment: assignmentId,
       student: req.user.id,
-      content,
+      fileName: req.file.originalname,
+      filePath: req.file.path.replace(/\\/g, "/"), // Normalize slashes for Windows compatibility
     });
 
     res.status(201).json({ success: true, submission });
@@ -70,6 +73,9 @@ exports.getSubmissionsForAssignment = async (req, res) => {
       submissionMap[s.student.toString()] = s;
     });
 
+    // Get the base server URL (e.g., http://localhost:5000/) for the download links
+    const baseUrl = `${req.protocol}://${req.get("host")}/`;
+
     const roster = students.map((student) => {
       const submission = submissionMap[student._id.toString()];
       return {
@@ -80,6 +86,11 @@ exports.getSubmissionsForAssignment = async (req, res) => {
         section: student.section,
         submitted: Boolean(submission),
         submittedAt: submission ? submission.submittedAt : null,
+        // Add file details and a clickable download link for the admin
+        file: submission ? {
+            name: submission.fileName,
+            downloadUrl: baseUrl + submission.filePath
+        } : null
       };
     });
 

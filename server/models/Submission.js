@@ -12,9 +12,13 @@ const submissionSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    // Kept simple on purpose: a text answer or a link (e.g. Google Drive link).
-    // Real file uploads can be added later without changing the API shape much.
-    content: {
+    // Store the original name of the uploaded file
+    fileName: {
+      type: String,
+      required: true,
+    },
+    // Store the path where the server saved the file
+    filePath: {
       type: String,
       required: true,
     },
